@@ -66,9 +66,10 @@ def scrape_games_price(price_url):
     price_datas = crawler.scrape_eshop_price()
     return price_datas
 
-def save_eshop_price_datas(eshop_games_datas, country):
+def save_eshop_price_and_history(eshop_games_datas, country):
     postgres = Postgres()
-    query = f'INSERT INTO {country}_eshop VALUES (%s, %s, %s, %s, %s)'
+    eshop_query = f'INSERT INTO {country}_eshop VALUES (%s, %s, %s, %s, %s)'
+    history_query = f'INSERT INTO {country}_discount_history VALUES (%s, %s, %s, %s)'
 
     for eshop_game in eshop_games_datas:
         title_id = eshop_game.get('title_id')
@@ -77,11 +78,11 @@ def save_eshop_price_datas(eshop_games_datas, country):
         start_datetime = eshop_game.get('start_datetime')
         end_datetime = eshop_game.get('end_datetime')
 
-        data = (title_id, amount, discount_amount, start_datetime, end_datetime)
-        postgres.insert_data(query, data)
+        eshop_data = (title_id, amount, discount_amount, start_datetime, end_datetime)
+        history_data = (title_id, discount_amount, start_datetime, end_datetime)
 
-    
-
+        postgres.insert_data(eshop_query, eshop_data)
+        postgres.insert_data(history_query, history_data)
 
 # Read settings
 urls = configparser.ConfigParser()
@@ -119,5 +120,5 @@ if __name__ == "__main__":
             scraped_datas = scrape_games_price(price_url)
             eshop_games_datas.extend(scraped_datas)
             sleep(1)
-        save_eshop_price_datas(eshop_games_datas, country)
+        save_eshop_price_and_history(eshop_games_datas, country)
         logger.info(f'Save {country} games price to database')
