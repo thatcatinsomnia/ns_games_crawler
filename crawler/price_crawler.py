@@ -22,15 +22,15 @@ class Price_Crawler:
             title_id = price.get('title_id')
             sales_status = price.get('sales_status')
             amount = self.get_regular_amount(price)
-            discount_data = self.get_discount_amount_and_date(price)   
+            discount_data = self.get_discount_amount_and_datetime(price)   
             
             price_data = {
                 'title_id': title_id,
                 'currency': amount.get('currency'),
                 'amount': amount.get('amount'),
                 'discount_amount': discount_data.get('discount_amount'),
-                'start_date': discount_data.get('discount_start_date'),
-                'end_date': discount_data.get('discount_end_date')
+                'start_datetime': discount_data.get('discount_start_datetime'),
+                'end_datetime': discount_data.get('discount_end_datetime')
             }
             price_datas.append(price_data)
         return price_datas
@@ -45,20 +45,20 @@ class Price_Crawler:
 
         return {'amount': amount, 'currency': currency}
 
-    def get_discount_amount_and_date(self, price):
+    def get_discount_amount_and_datetime(self, price):
         discount_amount = 0
-        discount_start_date = '-'
-        discount_end_date = '-'
+        discount_start_datetime = None
+        discount_end_datetime = None
 
         if price.get('discount_price'):
             discount_amount = price.get('discount_price').get('raw_value')
-            discount_start_date = price.get('discount_price').get('start_datetime')
-            discount_end_date = price.get('discount_price').get('end_datetime')
+            discount_start_datetime = price.get('discount_price').get('start_datetime')
+            discount_end_datetime = price.get('discount_price').get('end_datetime')
 
-        discount_amount_and_date = {
+        discount_amount_and_datetime = {
             'discount_amount': discount_amount,
-            'discount_start_date': discount_start_date,
-            'discount_end_date': discount_end_date
+            'discount_start_datetime': discount_start_datetime,
+            'discount_end_datetime': discount_end_datetime
         }
 
-        return discount_amount_and_date
+        return discount_amount_and_datetime
