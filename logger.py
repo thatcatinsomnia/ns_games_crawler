@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # create file handler and set level to debug
-fh = logging.FileHandler(logfile)
+fh = logging.FileHandler(logfile,'a', 'utf-8')
 fh.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
