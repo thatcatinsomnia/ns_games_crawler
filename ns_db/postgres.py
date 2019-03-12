@@ -40,9 +40,18 @@ class Postgres:
         try:
             self.cursor.execute(query, data)    
         except Exception as error:
-            logger.info(f'ERROR query, error: {error}'.upper())
+            logger.info(f'ERROR WHEN QEURY DATA: {error}'.upper())
         else:
             result = self.cursor.fetchone()
+            return result
+
+    def query_datas(self, query, data):
+        try:
+            self.cursor.execute(query, data)
+        except Exception as error:
+            logger.info(f'ERROR WHEN QEURY DATAS: {error}'.upper())
+        else:
+            result = self.cursor.fetchall()
             return result
 
     def insert_data(self, query, data):
@@ -52,7 +61,7 @@ class Postgres:
             self.connection.rollback()
             rollback = data
             logger.debug(f'{data} ROLLBACK!!!')
-            logger.debug(f'ERROR inserting data, error: {error}'.upper())
+            logger.debug(f'ERROR WHEN INSERTING DATA: {error}'.upper())
         else:
             self.connection.commit()
 
@@ -63,7 +72,7 @@ class Postgres:
             self.connection.rollback()
             rollback = data
             logger.debug(f'{data} ROLLBACK!!!')
-            logger.debug(f'ERROR update data, error: {error}'.upper())
+            logger.debug(f'ERROR WHEN UPDATE DATA: {error}'.upper())
         else:
             self.connection.commit()
 
