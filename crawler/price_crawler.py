@@ -27,12 +27,15 @@ class Price_Crawler:
             price_data = {
                 'title_id': title_id,
                 'currency': amount.get('currency'),
+                'sales_status' : sales_status,
                 'amount': amount.get('amount'),
                 'discount_amount': discount_data.get('discount_amount'),
                 'start_datetime': discount_data.get('discount_start_datetime'),
                 'end_datetime': discount_data.get('discount_end_datetime')
             }
-            price_datas.append(price_data)
+            if self.is_game_onsale(sales_status):
+                price_datas.append(price_data)
+            
         return price_datas
 
     def get_regular_amount(self, price):
@@ -60,5 +63,10 @@ class Price_Crawler:
             'discount_start_datetime': discount_start_datetime,
             'discount_end_datetime': discount_end_datetime
         }
-
         return discount_amount_and_datetime
+    
+    def is_game_onsale(self, sales_status):
+        is_onsale = False
+        if sales_status == 'onsale' or sales_status == 'preorder':
+            is_onsale = True
+        return is_onsale
