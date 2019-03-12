@@ -14,10 +14,10 @@ class Game_Crawler():
             response = requests.get(url)
             if response.status_code == 200:
                 respjson = json.loads(response.text.encode('UTF-8'))
-                games_of_request = respjson.get('games').get('game')
-                if games_of_request:
-                    us_games_datas.extend(games_of_request)
-                    logger.info(f'Scrape {len(games_of_request)} games from offset {offset} ...')
+                games_datas = respjson.get('games').get('game')
+                if games_datas:
+                    us_games_datas.extend(games_datas)
+                    logger.info(f'Scrape games from Nintendo US offset = {offset} ...')
                     offset += 200
                     sleep(1)
                 else:
