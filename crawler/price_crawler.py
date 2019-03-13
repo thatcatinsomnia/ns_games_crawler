@@ -12,8 +12,6 @@ class Price_Crawler:
             country = respjson.get('country')
             prices = respjson.get('prices')
             price_datas = self.filter_price_datas(prices)
-            logger.info(f'scrap {len(price_datas)} games price...')
-
         return price_datas
             
     def filter_price_datas(self, prices):
