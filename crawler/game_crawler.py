@@ -16,8 +16,8 @@ class Game_Crawler():
                 respjson = json.loads(response.text.encode('UTF-8'))
                 games_datas = respjson.get('games').get('game')
                 if games_datas:
-                    us_games_datas.extend(games_datas)
-                    logger.info(f'Scrape games from Nintendo US offset = {offset} ...')
+                    us_games_datas += games_datas
+                    logger.info(f'Scrape games from Nintendo US offset = {offset}')
                     offset += 200
                     sleep(1)
                 else:
