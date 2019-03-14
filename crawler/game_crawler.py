@@ -27,3 +27,24 @@ class Game_Crawler():
                 logger.info(f'Fail with resonpse code {response.status_code} in offset {offset}')
             
         return us_games_datas
+    
+    def scrape_eu_games_datas(self):
+        
+        url = f'https://searching.nintendo-europe.com/en/select'
+        params = {
+            'fq': 'type:GAME AND dates_released_dts:[* TO NOW] AND system_type:nintendoswitch*',
+            'q': '*',
+            'sort': 'date_from desc',
+            'wt': json,
+            'start': 0,
+            'rows': 9999
+        }
+        logger.info(f'Scrape games from Nintendo EU with rows: {params.get("rows")}')
+        response = requests.get(url, params)
+
+        if response.status_code == 200:
+            respjson = json.loads(response.text.encode('UTF-8'))
+            eu_games_datas = respjson.get('response').get('docs')
+            return eu_games_datas
+        else:
+            logger.info(f'Error with response code: {response.status_code}')
