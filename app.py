@@ -25,13 +25,15 @@ def save_us_games_datas(us_games_datas):
         nsuid = game.get('nsuid')
         number_of_players = game.get('number_of_players')
         front_box_art = game.get('front_box_art')
+
         if not nsuid:
-            logger.info(f'US game {game_id} has no nsuid ==> skip' )
+            logger.info(f'US game {game_id} has no nsuid ==> SKIP' )
             continue
         elif is_exist_in_us_database(nsuid):
-            logger.info(f'US game {game_id} already exists ==> skip' )
+            logger.info(f'US game {game_id} already exists ==> SKIP' )
             continue
         else:
+            logger.info(f'Try to saved game {game_id} data...' )
             counter += 1
             query = f'''
             INSERT INTO us_games (id, title, categories, nsuid, number_of_players, front_box_art) 
@@ -39,7 +41,6 @@ def save_us_games_datas(us_games_datas):
             '''
             data = (game_id, title, categories, nsuid, number_of_players, front_box_art)
             postgres.insert_data(query, data)
-            logger.info(f'Game id:{game_id} data is saved' )
     logger.info(f'Saved {counter} US game datas')
 
 def is_exist_in_us_database(nsuid):
@@ -55,15 +56,15 @@ def is_exist_in_us_database(nsuid):
 def get_us_games_nsuids():
     ''' Get Nintendo US games nsuid '''
     postgres = Postgres()
-    query = 'SELECT nsuid FROM us_games;'
+    query = 'SELECT nsuid FROM us_games'
     data = ()
     result = postgres.query_datas(query, data)
     logger.info(f'Get {len(result)} US games nsuid from database')
     return result
 
-def scrape_us_games_price_of_country(us_nsuids, country):
+def scrape_games_price_of_country(nsuids, country):
         logger.info(f'Start to scrape {country} games price...')
-        games_price_of_country = scrape_games_price_with_id(us_nsuids, country)
+        games_price_of_country = scrape_games_price_with_id(nsuids, country)
         logger.info(f'Scrape {len(games_price_of_country)} games price datas in {country}')
         return games_price_of_country
 
@@ -150,7 +151,7 @@ def save_games_price(game, area):
         data = (title_id, currency, sales_status, amount)
         postgres.insert_data(query, data)
         action_message = 'Create'
-    logger.info(f'{action_message} nsuid: {title_id} price information')
+    logger.info(f'{action_message} nsuid: {title_id} {currency} price information')
     
 def is_game_price_data_exist(game, area):
     ''' Check the if the game price info exist in database '''
@@ -175,13 +176,13 @@ def save_game_discount_history(game, area):
     lowest = is_lowest_price(game, area)
 
     if is_game_discount_history_exist(game, area):
-        logger.info(f'nsuid: {title_id} discount history already exists')
+        logger.info(f'nsuid: {title_id} {currency} discount history already exists ==> SKIP')
     else:
         query = f'INSERT INTO {area}_discount_history VALUES (%s, %s, %s, %s, %s, %s)'
         data = (title_id, currency, discount_amount, start_datetime, end_datetime, lowest)
         postgres = Postgres()
         postgres.insert_data(query, data)
-        logger.info(f'nsuid: {title_id} discount history saved')
+        logger.info(f'nsuid: {title_id} {currency} discount history saved')
 
 def is_game_discount_history_exist(game, area):
     ''' query the game in discount history '''
@@ -209,26 +210,81 @@ def is_lowest_price(game, area):
     '''
     title_id = str(game.get('title_id'))
     currency = game.get('currency')
+    discount_amount = game.get('discount_amount')
     data = (title_id, currency)
     postgres = Postgres()
     result = postgres.query_data(query, data)
 
     if not result:
-        return False
+        return True
     history_lowest = result[0]
-    current_discount_amount = Decimal(game.get('discount_amount'))
+    current_discount_amount = Decimal(discount_amount)
 
     if current_discount_amount < history_lowest:
         logger.info(f'nsuid {title_id} new lowest price {current_discount_amount}')
         return True
     return False
 
+def scrape_eu_games_datas():
+    ''' Scrap all games info in Nintendo EU eshop '''
+    crawler = Game_Crawler(EU_GAMES_URL)
+    eu_games_datas = crawler.scrape_eu_games_datas()
+    logger.info(f'Scrape {len(eu_games_datas)} eu games ...')
+    return eu_games_datas
+
+def save_eu_games_datas(eu_games_datas):
+    ''' Save EU games info to eu database '''
+    postgres = Postgres()
+    counter = 0
+    for game in eu_games_datas:
+        game_id = game.get('fs_id')
+        title = game.get('title')
+        nsuid = game.get('nsuid_txt')
+        number_of_players = game.get('players_to')
+        categories = json.dumps(game.get('pretty_game_categories_txt'))
+        front_box_art = game.get('image_url')
+        
+        if not nsuid:
+            logger.info(f'EU game {game_id} has no nsuid ==> SKIP')
+        elif is_exist_in_eu_database(nsuid[0]):
+            logger.info(f'EU game {game_id} already in database ==> SKIP')
+        else:
+            logger.info(f'Try to saved game {game_id} data...' )
+            counter += 1
+            nsuid = nsuid[0]
+            query = f'''
+            INSERT INTO eu_games (id, title, categories, nsuid, number_of_players, front_box_art) 
+            VALUES (%s, %s, %s, %s, %s, %s);
+            '''
+            data = (game_id, title, categories, nsuid, number_of_players, front_box_art)
+            postgres.insert_data(query, data)
+    logger.info(f'Saved {counter} EU game datas')
+
+def is_exist_in_eu_database(nsuid):
+    query = 'SELECT nsuid FROM eu_games WHERE nsuid = %s'
+    data = (nsuid,)
+    postgres = Postgres()
+    result = postgres.query_data(query, data)
+    if result:
+        return True
+    return False
+
+def get_eu_games_nsuids():
+    postgres = Postgres()
+    query = 'SELECT nsuid FROM eu_games'
+    data = ()
+    result = postgres.query_datas(query, data)
+    logger.info(f'Get {len(result)} EU games nsuid from database')
+    return result
+
 # Read settings
 config = configparser.ConfigParser()
 config.read('config/config.ini')
 US_GAMES_URL = config.get('urls', 'US')
+EU_GAMES_URL = config.get('urls', 'EU')
 PRICE_URL = config.get('urls', 'ESHOP_PRICE')
 US_COUNTRIES = config.get('country_code', 'US')
+EU_COUNTRIES = config.get('country_code', 'EU')
 
 if __name__ == "__main__":
     # Get all us games data
@@ -242,5 +298,19 @@ if __name__ == "__main__":
 
     # Scrap all games price datas in US countries
     for country in US_COUNTRIES.split(','):
-        games_price_of_country = scrape_us_games_price_of_country(us_nsuids, country)
+        games_price_of_country = scrape_games_price_of_country(us_nsuids, country)
+        save_games_price_and_discount_history_datas(games_price_of_country, country)
+
+    # Start to scrape EU games datas
+    eu_games_datas = scrape_eu_games_datas()
+
+    # Save all eu games datas
+    save_eu_games_datas(eu_games_datas)
+
+    # Get all nsuids from EU
+    eu_nsuids = get_eu_games_nsuids()
+
+    # Scrap all games price datas in EU countries
+    for country in EU_COUNTRIES.split(','):
+        games_price_of_country = scrape_games_price_of_country(eu_nsuids, country)
         save_games_price_and_discount_history_datas(games_price_of_country, country)

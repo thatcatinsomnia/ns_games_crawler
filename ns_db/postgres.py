@@ -64,6 +64,7 @@ class Postgres:
             logger.debug(f'ERROR WHEN INSERTING DATA: {error}'.upper())
         else:
             self.connection.commit()
+            logger.info('Data saved')
 
     def update_data(self, query, data):
         try:
