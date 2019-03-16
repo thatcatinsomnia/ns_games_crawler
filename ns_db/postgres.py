@@ -76,7 +76,7 @@ class Postgres:
             logger.debug(f'ERROR WHEN UPDATE DATA: {error}'.upper())
         else:
             self.connection.commit()
-
+            logger.info('Data updated')
     def __del__(self):
         self.connection.close()
         self.cursor.close()
