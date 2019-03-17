@@ -2,7 +2,7 @@ from crawler.game_crawler import Game_Crawler
 from crawler.price_crawler import Price_Crawler
 from ns_db.postgres import Postgres
 from logger import logger
-import json, configparser
+import json, configparser, re
 from time import sleep
 from decimal import Decimal
 
@@ -16,8 +16,8 @@ def scrape_us_games_datas():
 def save_us_games_datas(us_games_datas):
     ''' save the games info to database '''
     postgres = Postgres()
-    counter = 0
-    
+    save_counter = 0
+    update_counter = 0
     for game in us_games_datas:
         game_id = game.get('id')
         title = game.get('title')
@@ -34,16 +34,18 @@ def save_us_games_datas(us_games_datas):
         elif is_exist_in_us_database(nsuid):
             logger.info(f'US game {game_id} already exists ==> UPDATE')
             update_us_games_datas(game_data)
+            update_counter += 1
         else:
             logger.info(f'Try to saved game {game_id} data...' )
-            counter += 1
+            save_counter += 1
             query = f'''
             INSERT INTO us_games (id, title, game_code, category, nsuid,
             number_of_players, image_url)
             VALUES (%s, %s, %s, %s, %s, %s, %s);
             '''
             postgres.insert_data(query, game_data)
-    logger.info(f'Saved {counter} US game datas')
+    logger.info(f'Updated {update_counter} US game datas')
+    logger.info(f'Saved {save_counter} US game datas')
 
 def get_us_game_code(game):
     game_code = game.get('game_code')[-5:]
@@ -57,10 +59,11 @@ def get_us_game_category(game):
 
 def get_us_number_of_players(game):
     number_of_string = game.get('number_of_players')
-    number_of_players = re.findall(r'\d+', number_of_string)
-    if number_of_players:
-        return number_of_players[0]
-    return '0'
+    match = re.search(r'\d+', number_of_string)
+    number_of_players = '0'
+    if match:
+        number_of_players = match.group()
+    return number_of_players
 
 def is_exist_in_us_database(nsuid):
     ''' check if the game info exist in database '''
@@ -136,7 +139,6 @@ def save_games_price_and_discount_history_datas(games_price_of_country, country)
         if is_discount_now(game):
             save_game_discount_history(game, area)
 
-
 def get_eshop_area(country):
     ''' to get the area the country belong to '''
     config = configparser.ConfigParser()
@@ -164,8 +166,8 @@ def save_games_price(game, area):
     sales_status = game.get('sales_status')
     amount = game.get('amount')
     postgres = Postgres()
-    action_message = 'Trying to'
     if is_game_price_data_exist(game, area):
+        logger.info(f'Trying to update nsuid: {title_id} {currency} price information')
         query = f'''
         UPDATE {area}_eshop SET (title_id, currency, sales_status, amount)
         = (%s, %s, %s, %s)
@@ -173,14 +175,12 @@ def save_games_price(game, area):
         '''
         data = (title_id, currency, sales_status, amount, title_id, currency)
         postgres.update_data(query, data)
-        action_message += ' update'
     else:
+        logger.info(f'Trying to create nsuid: {title_id} {currency} price information')
         query = f'INSERT INTO {area}_eshop VALUES (%s, %s, %s, %s)'
         data = (title_id, currency, sales_status, amount)
         postgres.insert_data(query, data)
-        action_message += ' create'
-    logger.info(f'{action_message} nsuid: {title_id} {currency} price information')
-    
+
 def is_game_price_data_exist(game, area):
     ''' Check the if the game price info exist in database '''
     query = f'SELECT title_id FROM {area}_eshop WHERE title_id = %s AND currency = %s'
@@ -263,7 +263,9 @@ def scrape_eu_games_datas():
 def save_eu_games_datas(eu_games_datas):
     ''' Save EU games info to eu database '''
     postgres = Postgres()
-    counter = 0
+    save_counter = 0
+    update_counter = 0
+
     for game in eu_games_datas:
         game_id = game.get('fs_id')
         title = game.get('title')
@@ -279,16 +281,18 @@ def save_eu_games_datas(eu_games_datas):
         elif is_exist_in_eu_database(nsuid):
             logger.info(f'EU game {game_id} already in database ==> UPDATE')
             update_eu_games_datas(game_data)
+            update_counter += 1
         else:
             logger.info(f'Try to saved game {game_id} data...' )
-            counter += 1
+            save_counter += 1
             query = f'''
             INSERT INTO eu_games (id, title, game_code, category,
              nsuid, number_of_players, image_url) 
             VALUES (%s, %s, %s, %s, %s, %s, %s);
             '''  
             postgres.insert_data(query, game_data)
-    logger.info(f'Saved {counter} EU game datas')
+    logger.info(f'Saved {update_counter} EU game datas')
+    logger.info(f'Saved {save_counter} EU game datas')
 
 def get_eu_game_code(game):
     if game.get('product_code_txt'):
@@ -339,7 +343,9 @@ def scrape_asia_games_datas():
 def save_asia_games_datas(asia_games_datas):
     image_base_url = 'https://img-eshop.cdn.nintendo.net/i'
     postgres = Postgres()
-    counter = 0
+    save_counter = 0
+    update_counter = 0
+
     for game in asia_games_datas:
         game_id = game.get('id')
         title = game.get('title')
@@ -353,15 +359,17 @@ def save_asia_games_datas(asia_games_datas):
         elif is_exist_in_asia_database(nsuid):
             logger.info(f'ASIA game {game_id} already in database ==> UPDATE')
             update_asia_game_data(game_data)
+            update_counter += 1
         else:
             logger.info(f'Try to saved game {game_id} data...' )
-            counter += 1
+            save_counter += 1
             query = f'''
             INSERT INTO asia_games (id, title, game_code, nsuid, image_url) 
             VALUES (%s, %s, %s, %s, %s);
             '''
             postgres.insert_data(query, game_data)
-    logger.info(f'Saved {counter} ASIA game datas')
+    logger.info(f'Saved {update_counter} ASIA game datas')
+    logger.info(f'Saved {save_counter} ASIA game datas')
 
 def is_exist_in_asia_database(nsuid):
     query = 'SELECT nsuid FROM asia_games WHERE nsuid = %s'
@@ -388,6 +396,55 @@ def get_asia_games_nsuids():
     logger.info(f'Get {len(result)} ASIA games nsuid from database')
     return result
 
+def scrape_us_games_and_save_price_datas():
+    # Start to scrape US games datas
+    us_games_datas = scrape_us_games_datas()
+    
+    # Save US games info
+    save_us_games_datas(us_games_datas)
+
+    # Get games nsuid form us countries in order to query price data
+    us_nsuids = get_us_games_nsuids()
+
+    # Scrape all games price datas in US countries
+    for country in US_COUNTRIES.split(','):
+        games_price_of_country = scrape_games_price_of_country(us_nsuids, country)
+        save_games_price_and_discount_history_datas(games_price_of_country, country)
+
+def scrape_eu_games_and_save_price_datas():
+    # Start to scrape EU games datas
+    eu_games_datas = scrape_eu_games_datas()
+
+    # Save all EU games datas
+    save_eu_games_datas(eu_games_datas)
+
+    # # Get all nsuids from EU
+    eu_nsuids = get_eu_games_nsuids()
+
+    # Scrape all games price datas in EU countries
+    for country in EU_COUNTRIES.split(','):
+        games_price_of_country = scrape_games_price_of_country(eu_nsuids, country)
+        save_games_price_and_discount_history_datas(games_price_of_country, country)
+
+def scrape_asia_games_and_save_price_datas():
+    # Start to scrape Asia games datas
+    asia_games_datas = scrape_asia_games_datas()
+
+    # # Save all Asia games datas
+    save_asia_games_datas(asia_games_datas)
+
+    # Get all Asia games datas
+    asia_nsuids = get_asia_games_nsuids()
+
+    # Scrape all games price datas in EU countries
+    for country in ASIA_COUNTRIES.split(','):
+        games_price_of_country = scrape_games_price_of_country(asia_nsuids, country)
+        save_games_price_and_discount_history_datas(games_price_of_country, country)
+
+def main():
+    scrape_us_games_and_save_price_datas()
+    scrape_eu_games_and_save_price_datas()
+    scrape_asia_games_and_save_price_datas()
 
 # Read settings
 config = configparser.ConfigParser()
@@ -400,46 +457,5 @@ US_COUNTRIES = config.get('country_code', 'US')
 EU_COUNTRIES = config.get('country_code', 'EU')
 ASIA_COUNTRIES = config.get('country_code', 'ASIA')
 
-
 if __name__ == "__main__":
-    # Start to scrape US games datas
-    us_games_datas = scrape_us_games_datas()
-    
-    # Save US games info
-    save_us_games_datas(us_games_datas)
-
-    # # Get games nsuid form us countries in order to query price data
-    us_nsuids = get_us_games_nsuids()
-
-    # # # Scrape all games price datas in US countries
-    # for country in US_COUNTRIES.split(','):
-    #     games_price_of_country = scrape_games_price_of_country(us_nsuids, country)
-    #     save_games_price_and_discount_history_datas(games_price_of_country, country)
-
-    # # # Start to scrape EU games datas
-    eu_games_datas = scrape_eu_games_datas()
-
-    # Save all EU games datas
-    save_eu_games_datas(eu_games_datas)
-
-    # # # Get all nsuids from EU
-    # eu_nsuids = get_eu_games_nsuids()
-
-    # # Scrape all games price datas in EU countries
-    # for country in EU_COUNTRIES.split(','):
-    #     games_price_of_country = scrape_games_price_of_country(eu_nsuids, country)
-    #     save_games_price_and_discount_history_datas(games_price_of_country, country)
-
-    # # Start to scrape Asia games datas
-    asia_games_datas = scrape_asia_games_datas()
-
-    # # Save all Asia games datas
-    save_asia_games_datas(asia_games_datas)
-
-    # # Get all Asia games datas
-    # asia_nsuids = get_asia_games_nsuids()
-
-    # # Scrape all games price datas in EU countries
-    # for country in ASIA_COUNTRIES.split(','):
-    #     games_price_of_country = scrape_games_price_of_country(asia_nsuids, country)
-    #     save_games_price_and_discount_history_datas(games_price_of_country, country)
+    main()
