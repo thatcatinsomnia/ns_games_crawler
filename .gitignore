@@ -1,0 +1,6 @@
+.vscode/
+crawler/__pycache__
+log/
+ns_db/migrations/
+database.ini
+config.ini
