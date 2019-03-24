@@ -3,7 +3,7 @@ from logger import logger
 
 
 class Postgres:
-    """For handle database, the class is singleton"""
+    """ For handle database, the class is singleton """
     _instance = None
 
     config = configparser.ConfigParser()
@@ -64,7 +64,6 @@ class Postgres:
             logger.debug(f'ERROR WHEN INSERTING DATA: {error}'.upper())
         else:
             self.connection.commit()
-            logger.info('Data saved')
 
     def update_data(self, query, data):
         try:
@@ -76,7 +75,18 @@ class Postgres:
             logger.debug(f'ERROR WHEN UPDATE DATA: {error}'.upper())
         else:
             self.connection.commit()
-            logger.info('Data updated')
+
+    def delete_data(self, query, data):
+        try:
+            self.cursor.execute(query, data)
+        except Exception as error:
+            self.connection.rollback()
+            rollback = data
+            logger.debug(f'{data} ROLLBACK!!!')
+            logger.debug(f'ERROR WHEN DELETE DATA: {error}'.upper())
+        else:
+            self.connection.commit()
+
     def __del__(self):
         self.connection.close()
         self.cursor.close()
