@@ -1,4 +1,4 @@
-import requests, re, html
+import requests, re, html, uuid
 from logger import logger
 from ns_db.postgres import Postgres
 from nintendo.nintendo import Nintendo
@@ -47,7 +47,7 @@ class NA_Nintendo(Nintendo):
     def save_na_games_info(self, games):
         logger.info(f'Saving {self._region} games info...')
         for game in games:
-            game_id = game.get('id')
+            game_id = uuid.uuid4().hex
             title = self._get_game_title(game)
             game_code = self._get_game_code(game)
             category = self._get_game_category(game)

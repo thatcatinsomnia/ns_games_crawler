@@ -1,4 +1,4 @@
-import requests, json
+import requests, json, uuid
 from logger import logger
 from ns_db.postgres import Postgres
 from nintendo.nintendo import Nintendo
@@ -40,7 +40,7 @@ class EU_Nintendo(Nintendo):
     def save_eu_games_info(self, games):
         logger.info(f'Saving {self._region} games info...')
         for game in games:
-            game_id = game.get('fs_id')
+            game_id = uuid.uuid4().hex
             title = game.get('title')
             game_code = self._get_game_code(game)
             category = self._get_game_category(game)

@@ -1,4 +1,4 @@
-import requests, re, html
+import requests, re, html, uuid
 from logger import logger
 from ns_db.postgres import Postgres
 from time import sleep
@@ -48,7 +48,7 @@ class JP_Nintendo(Nintendo):
 
     def save_jp_games_info(self, games):
         for game in games:
-            game_id = game.get('id')
+            game_id = uuid.uuid4().hex
             title = self._get_game_title(game)
             game_code = game.get('icode').strip()
             category = None

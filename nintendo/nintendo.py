@@ -1,6 +1,5 @@
 from ns_db.postgres import Postgres
 from logger import logger
-from utility import *
 import requests
 from time import sleep
 
@@ -66,8 +65,6 @@ class Nintendo:
                 prices = response.json().get('prices')
                 games_price += prices
                 sleep(1)
-                
-        logger.info(f'{self._region} Price Info Count: {len(games_price)}')
         return games_price
 
     def _group_nsuids(self, nsuids):
