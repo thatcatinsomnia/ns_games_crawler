@@ -1,4 +1,4 @@
-import requests, re, html, uuid
+import requests, re, html
 from logger import logger
 from ns_db.postgres import Postgres
 from time import sleep
@@ -6,6 +6,7 @@ from nintendo.nintendo import Nintendo
 
 class JP_Nintendo(Nintendo):
     def __init__(self):
+        super().__init__()
         self._url = 'https://search.nintendo.jp/nintendo_soft/search.json'
         self._base_image_url = 'https://img-eshop.cdn.nintendo.net/i'
         self._region = 'JP'
@@ -48,27 +49,24 @@ class JP_Nintendo(Nintendo):
 
     def save_jp_games_info(self, games):
         for game in games:
-            game_id = uuid.uuid4().hex
+            nsuid = game.get('nsuid')
             title = self._get_game_title(game)
             game_code = game.get('icode').strip()
             category = None
-            nsuid = game.get('nsuid')
             number_of_players = 0
             image_url = self._get_image_url(game)
             release_date = game.get('sdate')
             data = {
-                'game_id': game_id,
+                'nsuid': nsuid,
                 'title': title,
-                'region': self._region,
                 'game_code': game_code,
                 'category': category,
-                'nsuid': nsuid,
                 'number_of_players': number_of_players,
                 'image_url': image_url,
                 'release_date': release_date
             }
             
-            if self._game_info_exist(game_id):
+            if self._game_info_exist(nsuid):
                 self._update_game_info(data)
             elif nsuid:
                 self._create_game_info(data)

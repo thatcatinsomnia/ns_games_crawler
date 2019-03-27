@@ -1,10 +1,11 @@
-import requests, json, uuid
+import requests, json
 from logger import logger
 from ns_db.postgres import Postgres
 from nintendo.nintendo import Nintendo
 
 class EU_Nintendo(Nintendo):
     def __init__(self):
+        super().__init__()
         self._url = 'https://searching.nintendo-europe.com/en/select'
         self._region = 'EU'
         self._countries = ('FR', 'CZ', 'DK', 'NO', 'PL', 'ZA', 'SE', 'CH', 'GB', 'RU', 'AU', 'NZ')
@@ -40,19 +41,16 @@ class EU_Nintendo(Nintendo):
     def save_eu_games_info(self, games):
         logger.info(f'Saving {self._region} games info...')
         for game in games:
-            game_id = uuid.uuid4().hex
+            nsuid = game.get('nsuid_txt')[0]
             title = game.get('title')
             game_code = self._get_game_code(game)
             category = self._get_game_category(game)
-            nsuid = game.get('nsuid_txt')[0]
             number_of_players = game.get('players_to')
             image_url = game.get('image_url')
             release_date = game.get('dates_released_dts')[0]
             data = {
-                'game_id': game_id,
-                'title': title,
-                'region': self._region,
                 'nsuid': nsuid,
+                'title': title,
                 'game_code': game_code,
                 'category': category,
                 'number_of_players': number_of_players,
@@ -60,7 +58,7 @@ class EU_Nintendo(Nintendo):
                 'release_date': release_date
             }
 
-            if self._game_info_exist(game_id):
+            if self._game_info_exist(nsuid):
                 self._update_game_info(data)
             else:
                 self._create_game_info(data)

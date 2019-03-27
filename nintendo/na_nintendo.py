@@ -1,4 +1,4 @@
-import requests, re, html, uuid
+import requests, re, html
 from logger import logger
 from ns_db.postgres import Postgres
 from nintendo.nintendo import Nintendo
@@ -6,6 +6,7 @@ from time import sleep
 
 class NA_Nintendo(Nintendo):
     def __init__(self):
+        super().__init__()
         self._url = 'https://www.nintendo.com/json/content/get/filter/game?' \
                     'system=switch&availability=now&sort=featured&direction=des&limit=200'
         self._region = 'NA'
@@ -47,19 +48,18 @@ class NA_Nintendo(Nintendo):
     def save_na_games_info(self, games):
         logger.info(f'Saving {self._region} games info...')
         for game in games:
-            game_id = uuid.uuid4().hex
+            nsuid = game.get('nsuid')
+            if not nsuid:
+                continue
             title = self._get_game_title(game)
             game_code = self._get_game_code(game)
             category = self._get_game_category(game)
-            nsuid = game.get('nsuid')
             number_of_players = self._get_number_of_players(game)
             image_url = game.get('front_box_art')
             release_date = game.get('release_date')
             data = {
-                'game_id': game_id,
-                'title': title,
-                'region': self._region,
                 'nsuid': nsuid,
+                'title': title,
                 'game_code': game_code,
                 'category': category,
                 'number_of_players': number_of_players,
@@ -67,7 +67,7 @@ class NA_Nintendo(Nintendo):
                 'release_date': release_date
             }
             
-            if self._game_info_exist(game_id):
+            if self._game_info_exist(nsuid):
                 self._update_game_info(data)
             else:
                 self._create_game_info(data)
