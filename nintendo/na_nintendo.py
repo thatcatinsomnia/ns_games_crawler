@@ -1,6 +1,6 @@
 import requests, re, html
 from logger import logger
-from ns_db.postgres import Postgres
+from database.postgres import Postgres
 from nintendo.nintendo import Nintendo
 from time import sleep
 
@@ -52,13 +52,14 @@ class NA_Nintendo(Nintendo):
             if not nsuid:
                 continue
             title = self._get_game_title(game)
-            game_code = self._get_game_code(game)
+            game_code = self._get_game_code2(game)
             category = self._get_game_category(game)
             number_of_players = self._get_number_of_players(game)
             image_url = game.get('front_box_art')
             release_date = game.get('release_date')
             data = {
                 'nsuid': nsuid,
+                'region': self._region,
                 'title': title,
                 'game_code': game_code,
                 'category': category,
@@ -66,18 +67,28 @@ class NA_Nintendo(Nintendo):
                 'image_url': image_url,
                 'release_date': release_date
             }
-            
-            if self._game_info_exist(nsuid):
-                self._update_game_info(data)
-            else:
+
+            if not self._game_info_exist(nsuid):
                 self._create_game_info(data)
+                
         logger.info(f'{self._region} GAMES INFO SAVED')
 
     def _get_game_title(self, game):
-        title = game.get('title')
+        title = game.get('title').upper()
+        match = re.search(r'&#[\d]+[\w]+;', title)
+        if match:
+            result = match.group(0)
+            title = title.replace(result, '')
+
         return html.unescape(title)
         
     def _get_game_code(self, game):
+        game_code = game.get('game_code').strip()
+        if game_code:
+            game_code = game_code[-5:-1]
+        return game_code
+
+    def _get_game_code2(self, game):
         game_code = game.get('game_code').strip()
         return game_code
 

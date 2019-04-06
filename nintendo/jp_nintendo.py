@@ -1,6 +1,6 @@
 import requests, re, html
 from logger import logger
-from ns_db.postgres import Postgres
+from database.postgres import Postgres
 from time import sleep
 from nintendo.nintendo import Nintendo
 
@@ -51,13 +51,14 @@ class JP_Nintendo(Nintendo):
         for game in games:
             nsuid = game.get('nsuid')
             title = self._get_game_title(game)
-            game_code = game.get('icode').strip()
+            game_code = self._get_game_code2(game)
             category = None
             number_of_players = 0
             image_url = self._get_image_url(game)
             release_date = game.get('sdate')
             data = {
                 'nsuid': nsuid,
+                'region': self._region,
                 'title': title,
                 'game_code': game_code,
                 'category': category,
@@ -66,16 +67,31 @@ class JP_Nintendo(Nintendo):
                 'release_date': release_date
             }
             
-            if self._game_info_exist(nsuid):
-                self._update_game_info(data)
-            elif nsuid:
+            if not self._game_info_exist(nsuid):
                 self._create_game_info(data)
+                
         logger.info(f'{self._region} GAMES INFO SAVED')
 
     def _get_game_title(self, game):
-        title = game.get('title')
+        title = game.get('title').upper()
+        match = re.search(r'&#[\d]+[\w]+;', title)
+        if match:
+            result = match.group(0)
+            title = title.replace(result, '')
         return html.unescape(title)
-    
+        
+    def _get_game_code(self, game):
+        game_code = ''
+        if game.get('icode'):
+           game_code = game.get('icode').strip()[:-1]
+        return game_code
+        
+    def _get_game_code2(self, game):
+        game_code = ''
+        if game.get('icode'):
+           game_code = game.get('icode').strip()
+        return game_code
+
     def _get_image_url(self, game):
         path = game.get('iurl')
         image_url = f'{self._base_image_url}/{path}.jpg'

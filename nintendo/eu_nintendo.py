@@ -1,6 +1,6 @@
-import requests, json
+import requests, json, html, re
 from logger import logger
-from ns_db.postgres import Postgres
+from database.postgres import Postgres
 from nintendo.nintendo import Nintendo
 
 class EU_Nintendo(Nintendo):
@@ -42,14 +42,15 @@ class EU_Nintendo(Nintendo):
         logger.info(f'Saving {self._region} games info...')
         for game in games:
             nsuid = game.get('nsuid_txt')[0]
-            title = game.get('title')
-            game_code = self._get_game_code(game)
+            title = self._get_game_title(game)
+            game_code = self._get_game_code2(game)
             category = self._get_game_category(game)
             number_of_players = game.get('players_to')
             image_url = game.get('image_url')
             release_date = game.get('dates_released_dts')[0]
             data = {
                 'nsuid': nsuid,
+                'region': self._region,
                 'title': title,
                 'game_code': game_code,
                 'category': category,
@@ -58,13 +59,29 @@ class EU_Nintendo(Nintendo):
                 'release_date': release_date
             }
 
-            if self._game_info_exist(nsuid):
-                self._update_game_info(data)
-            else:
+            if not self._game_info_exist(nsuid):
                 self._create_game_info(data)
+                
         logger.info(f'{self._region} GAMES INFO SAVED')
+    
+    def _get_game_title(self, game):
+        title = game.get('title').upper()
+        match = re.search(r'&#[\d]+[\w]+;', title)
+        if match:
+            result = match.group(0)
+            title = title.replace(result, '')
+        return html.unescape(title)
 
     def _get_game_code(self, game):
+        game_code = ''
+        if game.get('product_code_txt'):
+            game_code = game.get('product_code_txt')[0].strip()
+              
+        if game_code:
+            game_code = game_code[-5:-1]
+        return game_code
+
+    def _get_game_code2(self, game):
         game_code = ''
         if game.get('product_code_txt'):
             game_code = game.get('product_code_txt')[0].strip()
