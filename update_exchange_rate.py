@@ -34,7 +34,10 @@ def get_exchange_rate():
         'base': base
     }
     r = requests.get(url, payload)
-    return r.json()
+    if r:
+        return r.json()
+    else:
+        logger.info('NO DATA FROM RESPONSE, PLEASE CHECK API...')
 
 def is_data_exist(source_currency, dest_currency, timestamp):
     query = f'''
@@ -86,6 +89,8 @@ def update_discount_price_to_usd(region):
     logger.info(f'{region.upper()} DISCOUNT CURRENCY TO_USD UPDATED')
 
 if __name__ == '__main__':
+    update_currency_exchange_rate()
+
     update_price_to_usd('na')
     update_discount_price_to_usd('na')
     
