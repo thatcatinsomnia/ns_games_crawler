@@ -51,7 +51,8 @@ class JP_Nintendo(Nintendo):
         for game in games:
             nsuid = game.get('nsuid')
             title = self._get_game_title(game)
-            game_code = self._get_game_code2(game)
+            slug = None
+            game_code = self._get_game_code(game)
             category = None
             number_of_players = 0
             image_url = self._get_image_url(game)
@@ -60,6 +61,8 @@ class JP_Nintendo(Nintendo):
                 'nsuid': nsuid,
                 'region': self._region,
                 'title': title,
+                'slug': slug,
+                'description': None,
                 'game_code': game_code,
                 'category': category,
                 'number_of_players': number_of_players,
@@ -86,7 +89,7 @@ class JP_Nintendo(Nintendo):
            game_code = game.get('icode').strip()[:-1]
         return game_code
         
-    def _get_game_code2(self, game):
+    def _get_full_game_code(self, game):
         game_code = ''
         if game.get('icode'):
            game_code = game.get('icode').strip()

@@ -18,8 +18,7 @@ class EU_Nintendo(Nintendo):
 
     def scrape_eu_games_info_with_rows(self, rows):
         payload = {
-            'fq': 'type:GAME AND ((playable_on_txt:\"HAC\")' \
-                 'AND (dates_released_dts:[* TO NOW]) AND (nsuid_txt:*))',
+            'fq': 'type:GAME AND ((playable_on_txt:"HAC")) AND sorting_title:* AND *:*',
             'q': '*',
             'system_type': 'nintendoswitch*',
             'sort':"score desc, date_from desc",
@@ -30,7 +29,7 @@ class EU_Nintendo(Nintendo):
 
         response = requests.get(self._url, params=payload)
         response.encoding = 'utf-8'
-        
+
         if response.status_code == 200:
             eu_games_with_rows = response.json().get('response').get('docs')
             logger.info(f'Scrape {len(eu_games_with_rows)} games from with rows: {rows}')
@@ -41,17 +40,23 @@ class EU_Nintendo(Nintendo):
     def save_eu_games_info(self, games):
         logger.info(f'Saving {self._region} games info...')
         for game in games:
+            if not game.get('nsuid_txt'):
+                continue
             nsuid = game.get('nsuid_txt')[0]
             title = self._get_game_title(game)
-            game_code = self._get_game_code2(game)
+            slug = None
+            game_code = self._get_game_code(game)
             category = self._get_game_category(game)
             number_of_players = game.get('players_to')
             image_url = game.get('image_url')
             release_date = game.get('dates_released_dts')[0]
+            description = game.get('excerpt')
             data = {
                 'nsuid': nsuid,
                 'region': self._region,
                 'title': title,
+                'slug': slug,
+                'description': description,
                 'game_code': game_code,
                 'category': category,
                 'number_of_players': number_of_players,
@@ -66,6 +71,7 @@ class EU_Nintendo(Nintendo):
     
     def _get_game_title(self, game):
         title = game.get('title').upper()
+        title = title.replace('™', '').replace('®', '').strip()
         match = re.search(r'&#[\d]+[\w]+;', title)
         if match:
             result = match.group(0)
@@ -81,7 +87,7 @@ class EU_Nintendo(Nintendo):
             game_code = game_code[-5:-1]
         return game_code
 
-    def _get_game_code2(self, game):
+    def _get_full_game_code(self, game):
         game_code = ''
         if game.get('product_code_txt'):
             game_code = game.get('product_code_txt')[0].strip()

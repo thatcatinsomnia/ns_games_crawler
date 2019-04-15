@@ -30,11 +30,11 @@ class Nintendo:
         postgres = Postgres()
         query = f'''
         INSERT INTO ns_games 
-        (nsuid, region, title, category, 
-        number_of_players, image_url, release_date, game_code)
+        (nsuid, region, title, slug, description, category, 
+        number_of_players, image_url, release_date, game_code, created)
         VALUES 
-        (%(nsuid)s, %(region)s, %(title)s, %(category)s, 
-        %(number_of_players)s, %(image_url)s, %(release_date)s, %(game_code)s);
+        (%(nsuid)s, %(region)s, %(title)s, %(slug)s, %(description)s, %(category)s, 
+        %(number_of_players)s, %(image_url)s, %(release_date)s, %(game_code)s, CURRENT_TIMESTAMP);
         '''
         postgres.insert_data(query, data)
 
@@ -45,7 +45,7 @@ class Nintendo:
         return games_price
 
     def get_nsuids(self):
-        query = f'SELECT nsuid FROM ns_games WHERE region = %s;'
+        query = f'SELECT nsuid FROM {self._region}_games WHERE region = %s;'
         postgres = Postgres()
         datas = (self._region,)
         result = postgres.query_datas(query, datas)
@@ -106,7 +106,7 @@ class Nintendo:
         logger.info(f'{self._region} PRICE INFO SAVED')
 
     def _is_onsale(self, sales_status):
-        skip_status = ('sales_termination', 'not_found', 'unreleased')
+        skip_status = ('sales_termination', 'not_found')
         if sales_status in skip_status:
             return False
         return True
