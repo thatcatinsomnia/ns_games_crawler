@@ -2,5 +2,6 @@
 crawler/__pycache__
 log/
 database/sql/
+database/view/
 database.ini
 config.ini

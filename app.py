@@ -5,8 +5,8 @@ from nintendo.jp_nintendo import JP_Nintendo
 
 def main():
     na_nintendo = NA_Nintendo()
-    na_games = na_nintendo.scrape_na_games_info()
-    na_nintendo.save_na_games_info(na_games)
+    na_games = na_nintendo.scrape_na_games_from_algolia()
+    na_nintendo.save_na_games_info_with_algolia(na_games)
     na_games_price = na_nintendo.scrape_all_games_price()
     na_nintendo.save_games_price(na_games_price)
 
